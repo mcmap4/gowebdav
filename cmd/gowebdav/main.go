@@ -4,18 +4,20 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	d "github.com/studio-b12/gowebdav"
 	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	d "github.com/mcmap4/gowebdav"
 )
 
 func main() {
 	root := flag.String("root", os.Getenv("ROOT"), "WebDAV Endpoint [ENV.ROOT]")
 	usr := flag.String("user", os.Getenv("USER"), "User [ENV.USER]")
 	pw := flag.String("pw", os.Getenv("PASSWORD"), "Password [ENV.PASSWORD]")
+	token := flag.String("token", os.Getenv("TOKEN"), "JWT Token [ENV.TOKEN]")
 	netrc := flag.String("netrc-file", filepath.Join(getHome(), ".netrc"), "read login from netrc file")
 	method := flag.String("X", "", `Method:
 	LS <PATH>
@@ -42,14 +44,22 @@ func main() {
 		fail("Unsupported arguments")
 	}
 
-	if *pw == "" {
-		if u, p := d.ReadConfig(*root, *netrc); u != "" && p != "" {
-			usr = &u
-			pw = &p
-		}
-	}
+	var c *d.Client
 
-	c := d.NewClient(*root, *usr, *pw)
+	if *token != "" {
+		// User supplied token, create Client with Bearer token authorization
+		c = d.NewClientJWT(*root, *token)
+	} else {
+		// no token supplied, continue with user/pass-based authentication
+		if *pw == "" {
+			if u, p := d.ReadConfig(*root, *netrc); u != "" && p != "" {
+				usr = &u
+				pw = &p
+			}
+		}
+
+		c = d.NewClient(*root, *usr, *pw)
+	}
 
 	cmd := getCmd(*method)
 
