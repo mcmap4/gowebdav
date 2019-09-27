@@ -59,8 +59,11 @@ func NewClient(uri, user, pw string) *Client {
 }
 
 // NewClientJWT creates a new instance of client with Bearer Auth token support
-func NewClientJWT(uri, pw string) *Client {
-	return &Client{FixSlash(uri), make(http.Header), &http.Client{}, &BearerAuth{pw}}
+func NewClientJWT(uri, pw string, c *http.Client) *Client {
+	if c == nil {
+		c = &http.Client{}
+	}
+	return &Client{FixSlash(uri), make(http.Header), c, &BearerAuth{pw}}
 }
 
 // SetHeader lets us set arbitrary headers for a given client

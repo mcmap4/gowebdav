@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -47,8 +49,18 @@ func main() {
 	var c *d.Client
 
 	if *token != "" {
+		// create option to ignore insecure certificates
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+
+		httpClient := &http.Client{
+			Transport: tr,
+		}
+
 		// User supplied token, create Client with Bearer token authorization
-		c = d.NewClientJWT(*root, *token)
+		c = d.NewClientJWT(*root, *token, httpClient)
+
 	} else {
 		// no token supplied, continue with user/pass-based authentication
 		if *pw == "" {
